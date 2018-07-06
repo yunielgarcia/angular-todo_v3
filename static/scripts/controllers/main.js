@@ -3,13 +3,13 @@
 angular.module('todoListApp')
 .controller('mainCtrl',['$scope', 'Todo', function($scope, Todo){
   
-  $scope.todos = Todo.query().$promise
-        .then(function (response) {
+  $scope.todos = Todo.get().$promise
+        .then(function (data) {
         // do something with the response
-            return response.data
+            return data.todos;
         }, function (error) {
             // pass the error the the error service
-            console.log('error')
+            console.log(error)
             return []
         });;
   
