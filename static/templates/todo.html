@@ -2,11 +2,19 @@
      ng-class="{'editing-item': editing, 'edited': todo.edited, 'completed': todo.completed}">
     <input type="checkbox" ng-model="todo.completed"/>
     <span ng-click="todo.completed = !todo.completed; todo.edited = true"></span>
-    <label ng-hide="editing" ng-click="editing=true">{{ todo.name }}</label>
-    <input ng-show="editing" ng-blur="editing = false" class="editing-label" type="text" ng-model="todo.name"
+    <label ng-hide="editing" ng-click="editing=true">[[ todo.name ]]</label>
+    <input ng-show="editing"
+           ng-blur="editing = false"
+           class="editing-label"
+           type="text"
+           ng-model="todo.name"
            ng-change="todo.edited = true"/>
     <div class="actions">
-        <a href="" ng-click="saveTodos()">Save</a>
+        <a ng-if="todo.edited && !todo.id && !editing || !todo.edited && !editing"
+           href="" ng-click="createTask(todo)">Create</a>
+        <a ng-if="todo.edited && todo.id && !editing"
+           href="" ng-click="updateTask(todo)">Update</a>
+        <a ng-if="editing" >Done</a>
         <a href="" class="delete" ng-click="deleteTodo(todo, $index)">Delete</a>
     </div>
 </div>

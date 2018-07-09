@@ -16,11 +16,21 @@ angular.module('todoListApp')
     });
     filteredTodos.forEach(function(todo) {
       if (todo.id) {
-        todo.$update();
+        Todo.update(todo);
       } else {
         todo.$save();
       }
-
     });
-  }; 
+  };
+
+  $scope.createTask = createTask;
+  $scope.updateTask = updateTask;
+
+  function createTask(todo) {
+      todo.$save();
+  }
+
+  function updateTask(todo) {
+      Todo.update(todo);
+  }
 });
