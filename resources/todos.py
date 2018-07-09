@@ -27,12 +27,11 @@ class TodoList(Resource):
                  for todo in models.Todo.select()]
         return {'todos': todos}
 
-    # @marshal_with(course_fields)
-    # @auth.login_required
-    # def post(self):
-    #     args = self.reqparse.parse_args()
-    #     course = models.Course.create(**args)
-    #     return add_reviews(course), 201, {'Location': url_for('resources.courses.courses')}
+    @marshal_with(todo_fields)
+    def post(self):
+        args = self.reqparse.parse_args()
+        course = models.Todo.create(**args)
+        return course, 201, {'Location': url_for('resources.todos.todos')}
 
 
 # class Course(Resource):

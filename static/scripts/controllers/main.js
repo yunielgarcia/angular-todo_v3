@@ -10,7 +10,7 @@ angular.module('todoListApp')
             var todo = new Todo();
             todo.name = 'New task!'
             todo.completed = false;
-            // $scope.todos.unshift(todo);
+            $scope.todos.unshift(todo);
             console.log('angular working')
         };
 

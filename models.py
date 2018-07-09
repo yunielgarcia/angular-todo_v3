@@ -7,12 +7,14 @@ from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer,
                           BadSignature, SignatureExpired)
 from peewee import *
 
-DATABASE = SqliteDatabase('todos.sqlite')
+DATABASE = SqliteDatabase('tasks.sqlite')
 HASHER = PasswordHasher()
 
 
 class Todo(Model):
     name = CharField(unique=True)
+    completed = BooleanField(default=False)
+    edited = BooleanField(default=False)
     created_at = DateTimeField(default=datetime.datetime.now)
 
     class Meta:
@@ -64,3 +66,10 @@ class User(Model):
     def generate_auth_token(self):
         serializer = Serializer(config.SECRET_KEY)
         return serializer.dumps({'id': self.id})
+
+
+def initialize():
+    DATABASE.connect()
+    DATABASE.create_tables([User, Todo], safe=True)
+    DATABASE.close()
+    print('initialize')
