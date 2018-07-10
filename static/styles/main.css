@@ -69,3 +69,114 @@ input[type="checkbox"] + span {
 input[type="checkbox"]:checked + span {
     background:url(checkbox-filled.svg) left top no-repeat;
 }
+
+input {
+  width: 100%;
+  border: 0;
+  border-bottom: 2px solid #D3D8DC;
+  outline: 0;
+  background: #fff;
+  padding: 20px 0 4px;
+  margin: 0 0 20px;
+  color: #777B7E;
+}
+input:focus {
+  border-color: #6ECDF7;
+  color: #2C3238;
+}
+
+/*Grid*/
+.row {
+  max-width: 800px;
+  padding: 0 40px;
+  margin: 0 auto;
+  transition: .35s linear;
+}
+.row:before, .row:after {
+  content: '';
+  display: table;
+}
+.row:after {
+  clear: both;
+}
+.grid-100{
+    display: inline-block;
+  float: left;
+  width: 100%;
+}
+.grid-50{
+    display: inline-block;
+  float: left;
+  width: 49%;
+}
+.grid-33{
+    display: inline-block;
+  float: left;
+  width: 33%;
+}
+.grid-25{
+    display: inline-block;
+  float: left;
+  width: 20%;
+  margin: 0 2.25%;
+}
+button {
+  width: 100%;
+  padding: 20px 0;
+  text-align: center;
+  background: #6ECDF7;
+  color: #fff;
+  border: 0;
+  border-radius: 4px;
+  opacity: .8;
+  transition: .35s linear;
+}
+button:hover {
+  opacity: 1;
+}
+button.small {
+    padding: 1em 0.5em;
+    margin: 0 auto;
+    text-align: center;
+}
+.icon-logo {
+  width: 30px;
+  height: 30px;
+  background: url('../img/icon-logo.svg') center no-repeat;
+  background-size: 22px 22px;
+  display: block;
+  float: left;
+}
+.icon-profile {
+  width: 30px;
+  height: 30px;
+  background: url('../img/icon-profile.svg') center no-repeat;
+  background-size: 20px 20px;
+  display: block;
+  float: right;
+  margin-right: 10px;
+}
+.icon-power {
+  width: 30px;
+  height: 30px;
+  background: url('../img/icon-power.svg') center no-repeat;
+  background-size: 20px 20px;
+  display: block;
+  float: right;
+}
+
+/*Media Queries*/
+@media (max-width: 728px) {
+  .main {
+    margin: 10px auto;
+  }
+  .grid-25 {
+    width: 46%;
+    margin: 20px 2%;
+  }
+  .grid-50 {
+    width: 100%;
+  }
+  .row {
+    padding: 0 10px;}
+}

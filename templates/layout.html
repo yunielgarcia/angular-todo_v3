@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title></title>
+    <link href='https://fonts.googleapis.com/css?family=Varela+Round' rel='stylesheet' type='text/css'>
+    <!--
+    ===============================
+    CHANGE
+    Added /static to link href
+    ===============================
+    -->
+    <link rel="stylesheet" href="/static/styles/main.css" type="text/css">
+</head>
+<body ng-app="todoListApp">
+
+<header>
+
+    <div class="row">
+
+        <div class="grid-33">
+
+{#            <a href="{{ url_for('index') }}" class="icon-logo"></a>#}
+
+        </div>
+
+        <div class="grid-33">
+
+            <!-- Say Hi -->
+            <h1>{% if current_user.is_authenticated %}
+                    Hello {{ current_user.username }}!
+                {% endif %}
+            </h1>
+
+
+        </div>
+
+        <div class="grid-33">
+
+            <!-- Log in/Log out -->
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('logout') }}" class="icon-power" title="Log out"></a>
+            {% else %}
+            <a href="{{ url_for('login') }}" class="icon-power" title="Log in"></a>
+            <a href="{{ url_for('register') }}" class="icon-profile" title="Register"></a>
+            {% endif %}
+        </div>
+
+    </div>
+
+</header>
+
+<div class="row">
+    <div class="main">
+        <nav>
+{#            <a href="{{ url_for('index') }}">All</a>#}
+{##}
+{#            {% if current_user.is_authenticated %}#}
+{#            <a href="{{ url_for('stream', username=current_user.username) }}">Following</a>#}
+{#            <a href="{{ url_for('post') }}" class="new">Create new Post</a>#}
+{#            {% endif %}#}
+        </nav>
+
+        {% block content %}{% endblock %}
+
+    </div>
+</div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.2/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular-resource.js"></script>
+<!--
+===============================
+CHANGE
+
+Added /static to all script src below
+===============================
+-->
+<script src="/static/scripts/app.js"></script>
+<script src="/static/scripts/resources/todo.js"></script>
+<script src="/static/scripts/controllers/main.js"></script>
+<script src="/static/scripts/controllers/todo.js"></script>
+<script src="/static/scripts/directives/todo.js"></script>
+</body>
+</html>

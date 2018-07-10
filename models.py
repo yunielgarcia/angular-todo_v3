@@ -2,26 +2,14 @@ import datetime
 
 import config
 
-from argon2 import PasswordHasher
-from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer,
-                          BadSignature, SignatureExpired)
+from flask_bcrypt import generate_password_hash
 from peewee import *
+from flask_login import UserMixin
 
 DATABASE = SqliteDatabase('tasks.sqlite')
-HASHER = PasswordHasher()
 
 
-class Todo(Model):
-    name = CharField(unique=True)
-    completed = BooleanField(default=False)
-    edited = BooleanField(default=False)
-    created_at = DateTimeField(default=datetime.datetime.now)
-
-    class Meta:
-        database = DATABASE
-
-
-class User(Model):
+class User(UserMixin, Model):
     username = CharField(unique=True)
     email = CharField(unique=True)
     password = CharField()
@@ -38,34 +26,24 @@ class User(Model):
             ).get()
         except cls.DoesNotExist:
             user = cls(username=username, email=email)
-            user.password = user.set_password(password)
+            user.password = generate_password_hash(password)
             user.save()
             return user
         else:
             raise Exception("User with that email or username already exists")
 
-    @staticmethod
-    def verify_auth_token(token):
-        serializer = Serializer(config.SECRET_KEY)
-        try:
-            data = serializer.loads(token)
-        except (SignatureExpired, BadSignature):
-            print('None')
-            return None
-        else:
-            user = User.get(User.id == data['id'])
-            return user
 
-    @staticmethod
-    def set_password(password):
-        return HASHER.hash(password)
+class Todo(Model):
+    name = CharField(unique=True)
+    completed = BooleanField(default=False)
+    edited = BooleanField(default=False)
+    created_at = DateTimeField(default=datetime.datetime.now)
+    user = ForeignKeyField(
+        rel_model=User
+    )
 
-    def verify_password(self, password):
-        return HASHER.verify(self.password, password)
-
-    def generate_auth_token(self):
-        serializer = Serializer(config.SECRET_KEY)
-        return serializer.dumps({'id': self.id})
+    class Meta:
+        database = DATABASE
 
 
 def initialize():

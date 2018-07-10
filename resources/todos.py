@@ -1,4 +1,4 @@
-from flask import jsonify, Blueprint, abort
+from flask import g, Blueprint, abort
 from flask_restful import (Resource, Api, reqparse, inputs,
                            fields, marshal, marshal_with, url_for)
 
@@ -39,20 +39,22 @@ class TodoList(Resource):
         super().__init__()
 
     def get(self):
+        # import pdb;pdb.set_trace()
         todos = [marshal(todo, todo_fields)
-                 for todo in models.Todo.select()]
+                 for todo in models.Todo.select().where(models.Todo.user == g.user.id)]
         return {'todos': todos}
 
     @marshal_with(todo_fields)
     def post(self):
         args = self.reqparse.parse_args()
         # import pdb;pdb.set_trace()
-        task = models.Todo.create(
+        todo = models.Todo.create(
             completed=args['completed'],
             edited=args['edited'],
-            name=args['name']
+            name=args['name'],
+            user=g.user.id
         )
-        return task, 201, {'Location': url_for('resources.todos.todos')}
+        return todo, 201, {'Location': url_for('resources.todos.todos')}
 
 
 class Todo(Resource):
