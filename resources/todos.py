@@ -89,12 +89,10 @@ class Todo(Resource):
         return (models.Todo.get(models.Todo.id == id), 200,
                 {'Location': url_for('resources.todos.todos')})
 
-    # @auth.login_required
-    # def delete(self, id):
-    #     query = models.Course.delete().where(models.Course.id == id)
-    #     query.execute()
-    #     return '', 204, {'Location': url_for('resources.courses.courses')}
-    #
+    def delete(self, id):
+        query = models.Todo.delete().where(models.Todo.id == id)
+        query.execute()
+        return '', 204, {'Location': url_for('resources.todos.todos')}
 
 
 todos_api = Blueprint('resources.todos', __name__)
