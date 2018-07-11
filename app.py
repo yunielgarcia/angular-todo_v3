@@ -81,7 +81,7 @@ def register():
             email=form.email.data,
             password=form.password.data
         )
-        return redirect(url_for('my_todos'))
+        return redirect(url_for('login'))
     return render_template('register.html', form=form)
 
 
