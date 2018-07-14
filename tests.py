@@ -1,8 +1,13 @@
 import unittest
+from playhouse.test_utils import test_database
+from peewee import *
 import os
 import tempfile
 
 from app import app
+from models import User, Todo
+
+TEST_DB = SqliteDatabase(':memory:')
 
 
 class TodoTestCase(unittest.TestCase):
@@ -12,10 +17,6 @@ class TodoTestCase(unittest.TestCase):
         app.testing = True
         app.config['WTF_CSRF_ENABLED'] = False
         self.tester = app.test_client()
-
-    def tearDown(self):
-        os.close(self.db)
-        os.unlink(app.config['DATABASE'])
 
     def login(self, email, password):
         return self.tester.post('/login', data=dict(
@@ -52,4 +53,5 @@ class TodoTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    with test_database(TEST_DB, [User, Todo]):
+        unittest.main()
