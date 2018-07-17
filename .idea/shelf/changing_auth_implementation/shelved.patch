@@ -1,0 +1,300 @@
+Index: app.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import models\nimport forms\n\nfrom flask import (Flask, render_template, flash, redirect, url_for,\n                   g)\nfrom resources.todos import todos_api\nfrom flask_bcrypt import check_password_hash\nfrom flask_login import (LoginManager, login_user,\n                         logout_user, login_required, current_user)\n\nfrom auth import auth\n\nimport config\n\napp = Flask(__name__)\napp.secret_key = config.SECRET_KEY\napp.register_blueprint(todos_api)\n\nlogin_manager = LoginManager()\nlogin_manager.init_app(app)\nlogin_manager.login_view = 'login'\n\n\n@login_manager.user_loader\ndef load_user(userid):\n    try:\n        return models.User.get(models.User.id == userid)\n    except models.DoesNotExist:\n        return None\n\n\n@app.before_request\ndef before_request():\n    \"\"\"Connect to the database before each request\"\"\"\n    # g is used globally so we attach thing to access them everywhere\n    g.db = models.DATABASE\n    g.db.connect()\n    g.user = current_user\n\n\n@app.after_request\ndef after_request(response):\n    \"\"\"Close the db after each request\"\"\"\n    g.db.close()\n    return response\n\n\n@app.route('/')\n@login_required\ndef my_todos():\n    return render_template('index.html')\n\n\n@app.route('/login', methods=['GET', 'POST'])\ndef login():\n    form = forms.LoginForm()\n    if form.validate_on_submit():\n        try:\n            user = models.User.get(models.User.email == form.email.data)\n            print('try')\n        except models.DoesNotExist:\n            flash(\"Your email or password doesn't match\", \"error\")\n            print('except')\n        else:\n            print('else')\n            if check_password_hash(user.password, form.password.data):\n                login_user(user)\n                flash(\"You've been logged in!\", \"Success\")\n                return redirect(url_for('my_todos'))\n            else:\n                flash(\"Your email or password doesn't match\", \"error\")\n    return render_template('login.html', form=form)\n\n\n@app.route('/register', methods=['GET', 'POST'])\ndef register():\n    form = forms.RegisterForm()\n    # let's check those validators\n    if form.validate_on_submit():\n        flash('Yay, you registered', 'success')\n        models.User.create_user(\n            username=form.username.data,\n            email=form.email.data,\n            password=form.password.data\n        )\n        return redirect(url_for('login'))\n    return render_template('register.html', form=form)\n\n\n@app.route('/logout')\n@login_required\ndef logout():\n    logout_user()\n    flash(\"You've been logged out!\")\n    return redirect(url_for('login'))\n\n\nif __name__ == '__main__':\n    models.initialize()\n    app.run(debug=config.DEBUG, host=config.HOST, port=config.PORT)\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app.py	(revision 7ae3d76c8d247e2957c0257fd547dd674dfe3b09)
++++ app.py	(date 1531844026000)
+@@ -2,9 +2,8 @@
+ import forms
+ 
+ from flask import (Flask, render_template, flash, redirect, url_for,
+-                   g)
++                   g, jsonify)
+ from resources.todos import todos_api
+-from flask_bcrypt import check_password_hash
+ from flask_login import (LoginManager, login_user,
+                          logout_user, login_required, current_user)
+ 
+@@ -16,37 +15,36 @@
+ app.secret_key = config.SECRET_KEY
+ app.register_blueprint(todos_api)
+ 
+-login_manager = LoginManager()
+-login_manager.init_app(app)
+-login_manager.login_view = 'login'
+-
+-
+-@login_manager.user_loader
+-def load_user(userid):
+-    try:
+-        return models.User.get(models.User.id == userid)
+-    except models.DoesNotExist:
+-        return None
+-
++# login_manager = LoginManager()
++# login_manager.init_app(app)
++# login_manager.login_view = 'login'
+ 
+-@app.before_request
+-def before_request():
+-    """Connect to the database before each request"""
+-    # g is used globally so we attach thing to access them everywhere
+-    g.db = models.DATABASE
+-    g.db.connect()
+-    g.user = current_user
+ 
+-
+-@app.after_request
+-def after_request(response):
+-    """Close the db after each request"""
+-    g.db.close()
+-    return response
++# @login_manager.user_loader
++# def load_user(userid):
++#     try:
++#         return models.User.get(models.User.id == userid)
++#     except models.DoesNotExist:
++#         return None
++#
++#
++# @app.before_request
++# def before_request():
++#     """Connect to the database before each request"""
++#     # g is used globally so we attach thing to access them everywhere
++#     g.db = models.DATABASE
++#     g.db.connect()
++#     g.user = current_user
++#
++#
++# @app.after_request
++# def after_request(response):
++#     """Close the db after each request"""
++#     g.db.close()
++#     return response
+ 
+ 
+ @app.route('/')
+-@login_required
+ def my_todos():
+     return render_template('index.html')
+ 
+@@ -63,9 +61,10 @@
+             print('except')
+         else:
+             print('else')
+-            if check_password_hash(user.password, form.password.data):
+-                login_user(user)
++            if user.verify_password(form.password.data):
++                # login_user(user)
+                 flash("You've been logged in!", "Success")
++                # import pdb;pdb.set_trace()
+                 return redirect(url_for('my_todos'))
+             else:
+                 flash("Your email or password doesn't match", "error")
+@@ -78,23 +77,31 @@
+     # let's check those validators
+     if form.validate_on_submit():
+         flash('Yay, you registered', 'success')
+-        models.User.create_user(
++        user = models.User.create_user(
+             username=form.username.data,
+             email=form.email.data,
+             password=form.password.data
+         )
+-        return redirect(url_for('login'))
++        g.user = user
++        token = get_auth_token()
++        return redirect(url_for('login'), code=201,)
+     return render_template('register.html', form=form)
+ 
+ 
+ @app.route('/logout')
+-@login_required
++@auth.login_required
+ def logout():
+     logout_user()
+     flash("You've been logged out!")
+     return redirect(url_for('login'))
+ 
+ 
++@auth.login_required
++def get_auth_token():
++    token = g.user.generate_auth_token()
++    return jsonify({'token': token.decode('ascii')})
++
++
+ if __name__ == '__main__':
+     models.initialize()
+     app.run(debug=config.DEBUG, host=config.HOST, port=config.PORT)
+Index: models.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import datetime\n\nimport config\n\nfrom flask_bcrypt import generate_password_hash\nfrom argon2 import PasswordHasher\nfrom peewee import *\nfrom flask_login import UserMixin\n\nDATABASE = SqliteDatabase('tasks.sqlite')\nHASHER = PasswordHasher()\n\nclass User(UserMixin, Model):\n    username = CharField(unique=True)\n    email = CharField(unique=True)\n    password = CharField()\n\n    class Meta:\n        database = DATABASE\n\n    @classmethod\n    def create_user(cls, username, email, password, **kwargs):\n        email = email.lower()\n        try:\n            cls.select().where(\n                (cls.email == email) | (cls.username ** username)\n            ).get()\n        except cls.DoesNotExist:\n            user = cls(username=username, email=email)\n            user.password = user.set_password(password)\n            user.save()\n            return user\n        else:\n            raise Exception(\"User with that email or username already exists\")\n\n    @staticmethod\n    def set_password(psw):\n        return HASHER.hash(psw)\n\n    def verify_password(self, password):\n        return HASHER.verify(self.password, password)\n\n\nclass Todo(Model):\n    name = CharField(unique=True)\n    completed = BooleanField(default=False)\n    edited = BooleanField(default=False)\n    created_at = DateTimeField(default=datetime.datetime.now)\n    user = ForeignKeyField(\n        rel_model=User\n    )\n\n    class Meta:\n        database = DATABASE\n\n\ndef initialize():\n    DATABASE.connect()\n    DATABASE.create_tables([User, Todo], safe=True)\n    DATABASE.close()\n    print('initialize')\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- models.py	(revision 7ae3d76c8d247e2957c0257fd547dd674dfe3b09)
++++ models.py	(date 1531841059000)
+@@ -1,8 +1,7 @@
+ import datetime
+-
+ import config
+-
+-from flask_bcrypt import generate_password_hash
++from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer,
++                          BadSignature, SignatureExpired)
+ from argon2 import PasswordHasher
+ from peewee import *
+ from flask_login import UserMixin
+@@ -10,6 +9,7 @@
+ DATABASE = SqliteDatabase('tasks.sqlite')
+ HASHER = PasswordHasher()
+ 
++
+ class User(UserMixin, Model):
+     username = CharField(unique=True)
+     email = CharField(unique=True)
+@@ -37,9 +37,24 @@
+     def set_password(psw):
+         return HASHER.hash(psw)
+ 
++    @staticmethod
++    def verify_auth_token(token):
++        serializer = Serializer(config.SECRET_KEY)
++        try:
++            data = serializer.loads(token)
++        except (SignatureExpired, BadSignature):
++            return None
++        else:
++            user = User.get(User.id == data['id'])
++            return user
++
+     def verify_password(self, password):
+         return HASHER.verify(self.password, password)
+ 
++    def generate_auth_token(self):
++        serializer = Serializer(config.SECRET_KEY)
++        return serializer.dumps({'id': self.id})
++
+ 
+ class Todo(Model):
+     name = CharField(unique=True)
+Index: resources/todos.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from flask import g, Blueprint, abort\nfrom flask_restful import (Resource, Api, reqparse, inputs,\n                           fields, marshal, marshal_with, url_for)\n\n# from auth import auth\nimport models\n\ntodo_fields = {\n    'id': fields.Integer,\n    'name': fields.String,\n    'completed': fields.Boolean,\n    'edited': fields.Boolean,\n}\n\n\nclass TodoList(Resource):\n    def __init__(self):\n        self.reqparse = reqparse.RequestParser()\n        self.reqparse.add_argument(\n            'name',\n            required=True,\n            help='No todo name provided',\n            location=['form', 'json']\n        )\n        self.reqparse.add_argument(\n            'completed',\n            # required=True,\n            help='No completed field provided',\n            location=['form', 'json'],\n            type=inputs.boolean\n        )\n        self.reqparse.add_argument(\n            'edited',\n            required=True,\n            help='No edited field provided',\n            location=['form', 'json'],\n            type=inputs.boolean\n        )\n        super().__init__()\n\n    def get(self):\n        # import pdb;pdb.set_trace()\n        todos = [marshal(todo, todo_fields)\n                 for todo in models.Todo.select().where(models.Todo.user == g.user.id)]\n        return {'todos': todos}\n\n    @marshal_with(todo_fields)\n    def post(self):\n        args = self.reqparse.parse_args()\n        # import pdb;pdb.set_trace()\n        todo = models.Todo.create(\n            completed=args['completed'],\n            edited=args['edited'],\n            name=args['name'],\n            user=g.user.id\n        )\n        return todo, 201, {'Location': url_for('resources.todos.todos')}\n\n\nclass Todo(Resource):\n    def __init__(self):\n        self.reqparse = reqparse.RequestParser()\n        self.reqparse.add_argument(\n            'name',\n            required=True,\n            help='No todo name provided',\n            location=['form', 'json']\n        )\n        self.reqparse.add_argument(\n            'completed',\n            required=True,\n            help='No completed field provided',\n            location=['form', 'json'],\n            type=inputs.boolean\n        )\n        self.reqparse.add_argument(\n            'edited',\n            required=True,\n            help='No edited field provided',\n            location=['form', 'json'],\n            type=inputs.boolean\n        )\n        super().__init__()\n\n    @marshal_with(todo_fields)\n    def put(self, id):\n        args = self.reqparse.parse_args()\n        # import pdb;pdb.set_trace()\n        query = models.Todo.update(**args).where(models.Todo.id == id)\n        query.execute()\n        return (models.Todo.get(models.Todo.id == id), 200,\n                {'Location': url_for('resources.todos.todos')})\n\n    def delete(self, id):\n        query = models.Todo.delete().where(models.Todo.id == id)\n        query.execute()\n        return '', 204, {'Location': url_for('resources.todos.todos')}\n\n\ntodos_api = Blueprint('resources.todos', __name__)\napi = Api(todos_api)\napi.add_resource(\n    TodoList,\n    '/api/v1/todos',\n    endpoint='todos'\n)\napi.add_resource(\n    Todo,\n    '/api/v1/todos/<int:id>',\n    endpoint='todo'\n)\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- resources/todos.py	(revision 7ae3d76c8d247e2957c0257fd547dd674dfe3b09)
++++ resources/todos.py	(date 1531842909000)
+@@ -1,6 +1,7 @@
+ from flask import g, Blueprint, abort
+ from flask_restful import (Resource, Api, reqparse, inputs,
+                            fields, marshal, marshal_with, url_for)
++from auth import auth
+ 
+ # from auth import auth
+ import models
+@@ -38,6 +39,7 @@
+         )
+         super().__init__()
+ 
++    @auth.login_required
+     def get(self):
+         # import pdb;pdb.set_trace()
+         todos = [marshal(todo, todo_fields)
+@@ -54,6 +56,9 @@
+             name=args['name'],
+             user=g.user.id
+         )
++
++        import pdb;
++        pdb.set_trace()
+         return todo, 201, {'Location': url_for('resources.todos.todos')}
+ 
+ 
+Index: auth.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from flask import g\nfrom flask_httpauth import HTTPBasicAuth\n\nimport models\n\nbasic_auth = HTTPBasicAuth()\nauth = basic_auth\n\n\n@basic_auth.verify_password\ndef verify_password(email_or_username, psw):\n    try:\n        user = models.User.get(\n            (models.User.email == email_or_username) |\n            (models.User.username == email_or_username)\n        )\n        if not user.verify_password(psw):\n            return False\n    except models.User.DoesNotExist:\n        return False\n    else:\n        g.user = user\n        return True\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- auth.py	(revision 7ae3d76c8d247e2957c0257fd547dd674dfe3b09)
++++ auth.py	(date 1531839502000)
+@@ -1,10 +1,11 @@
+ from flask import g
+-from flask_httpauth import HTTPBasicAuth
++from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth, MultiAuth
+ 
+ import models
+ 
+ basic_auth = HTTPBasicAuth()
+-auth = basic_auth
++token_auth = HTTPTokenAuth(scheme='Token')
++auth = MultiAuth(token_auth, basic_auth)
+ 
+ 
+ @basic_auth.verify_password
+@@ -21,3 +22,14 @@
+     else:
+         g.user = user
+         return True
++
++
++@token_auth.verify_token
++def verify_token(token):
++    print(token)
++    user = models.User.verify_auth_token(token)
++    if user is not None:
++        g.user = user
++        return True
++    else:
++        return False
+Index: templates/layout.html
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><!doctype html>\n<html lang=\"en\">\n<head>\n    <title></title>\n    <link href='https://fonts.googleapis.com/css?family=Varela+Round' rel='stylesheet' type='text/css'>\n    <!--\n    ===============================\n    CHANGE\n    Added /static to link href\n    ===============================\n    -->\n    <link rel=\"stylesheet\" href=\"/static/styles/main.css\" type=\"text/css\">\n</head>\n<body ng-app=\"todoListApp\">\n\n<header>\n\n    <div class=\"row\">\n\n        <div class=\"grid-33\">\n\n            <!-- Say Hi -->\n            <h1>{% if current_user.is_authenticated %}\n                    Hello {{ current_user.username }}!\n                {% endif %}\n            </h1>\n\n\n        </div>\n\n        <div class=\"grid-33\"  style=\"float: right\">\n\n            <!-- Log in/Log out -->\n            {% if current_user.is_authenticated %}\n            <a href=\"{{ url_for('logout') }}\" class=\"icon-power\" title=\"Log out\"></a>\n            {% else %}\n            <a href=\"{{ url_for('login') }}\" class=\"icon-power\" title=\"Log in\"></a>\n            <a href=\"{{ url_for('register') }}\" class=\"icon-profile\" title=\"Register\"></a>\n            {% endif %}\n        </div>\n\n    </div>\n\n</header>\n\n<div class=\"row\">\n    <div class=\"main\">\n\n        {% block content %}{% endblock %}\n\n    </div>\n</div>\n\n\n<script src=\"https://ajax.googleapis.com/ajax/libs/angularjs/1.7.2/angular.min.js\"></script>\n<script src=\"https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular-resource.js\"></script>\n<!--\n===============================\nCHANGE\n\nAdded /static to all script src below\n===============================\n-->\n<script src=\"/static/scripts/app.js\"></script>\n<script src=\"/static/scripts/resources/todo.js\"></script>\n<script src=\"/static/scripts/controllers/main.js\"></script>\n<script src=\"/static/scripts/controllers/todo.js\"></script>\n<script src=\"/static/scripts/directives/todo.js\"></script>\n</body>\n</html>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- templates/layout.html	(revision 7ae3d76c8d247e2957c0257fd547dd674dfe3b09)
++++ templates/layout.html	(date 1531840773000)
+@@ -20,10 +20,10 @@
+         <div class="grid-33">
+ 
+             <!-- Say Hi -->
+-            <h1>{% if current_user.is_authenticated %}
+-                    Hello {{ current_user.username }}!
+-                {% endif %}
+-            </h1>
++{#            <h1>{% if user.is_authenticated %}#}
++{#                    Hello {{ user.username }}!#}
++{#                {% endif %}#}
++{#            </h1>#}
+ 
+ 
+         </div>
+@@ -31,12 +31,12 @@
+         <div class="grid-33"  style="float: right">
+ 
+             <!-- Log in/Log out -->
+-            {% if current_user.is_authenticated %}
+-            <a href="{{ url_for('logout') }}" class="icon-power" title="Log out"></a>
+-            {% else %}
+-            <a href="{{ url_for('login') }}" class="icon-power" title="Log in"></a>
+-            <a href="{{ url_for('register') }}" class="icon-profile" title="Register"></a>
+-            {% endif %}
++{#            {% if user.is_authenticated %}#}
++{#            <a href="{{ url_for('logout') }}" class="icon-power" title="Log out"></a>#}
++{#            {% else %}#}
++{#            <a href="{{ url_for('login') }}" class="icon-power" title="Log in"></a>#}
++{#            <a href="{{ url_for('register') }}" class="icon-profile" title="Register"></a>#}
++{#            {% endif %}#}
+         </div>
+ 
+     </div>

@@ -1,0 +1,9 @@
+<changelist name="changing_auth_implementation" date="1531844951185" recycled="false">
+  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/changing_auth_implementation/shelved.patch" />
+  <option name="DESCRIPTION" value="changing auth implementation" />
+  <binary>
+    <option name="BEFORE_PATH" value="tasks.sqlite" />
+    <option name="AFTER_PATH" />
+    <option name="SHELVED_PATH" />
+  </binary>
+</changelist>
