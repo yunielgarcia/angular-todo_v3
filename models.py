@@ -3,12 +3,11 @@ import datetime
 import config
 
 from flask_bcrypt import generate_password_hash
-from argon2 import PasswordHasher
 from peewee import *
 from flask_login import UserMixin
 
 DATABASE = SqliteDatabase('tasks.sqlite')
-HASHER = PasswordHasher()
+
 
 class User(UserMixin, Model):
     username = CharField(unique=True)
@@ -27,18 +26,11 @@ class User(UserMixin, Model):
             ).get()
         except cls.DoesNotExist:
             user = cls(username=username, email=email)
-            user.password = user.set_password(password)
+            user.password = generate_password_hash(password)
             user.save()
             return user
         else:
             raise Exception("User with that email or username already exists")
-
-    @staticmethod
-    def set_password(psw):
-        return HASHER.hash(psw)
-
-    def verify_password(self, password):
-        return HASHER.verify(self.password, password)
 
 
 class Todo(Model):
