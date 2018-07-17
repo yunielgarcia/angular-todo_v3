@@ -2,7 +2,7 @@ from flask import g, Blueprint, abort
 from flask_restful import (Resource, Api, reqparse, inputs,
                            fields, marshal, marshal_with, url_for)
 
-# from auth import auth
+from auth import auth
 import models
 
 todo_fields = {
@@ -38,12 +38,13 @@ class TodoList(Resource):
         )
         super().__init__()
 
+    @auth.login_required
     def get(self):
-        # import pdb;pdb.set_trace()
         todos = [marshal(todo, todo_fields)
                  for todo in models.Todo.select().where(models.Todo.user == g.user.id)]
         return {'todos': todos}
 
+    @auth.login_required
     @marshal_with(todo_fields)
     def post(self):
         args = self.reqparse.parse_args()
@@ -82,6 +83,7 @@ class Todo(Resource):
         )
         super().__init__()
 
+    @auth.login_required
     @marshal_with(todo_fields)
     def put(self, id):
         args = self.reqparse.parse_args()
@@ -91,6 +93,7 @@ class Todo(Resource):
         return (models.Todo.get(models.Todo.id == id), 200,
                 {'Location': url_for('resources.todos.todos')})
 
+    @auth.login_required
     def delete(self, id):
         query = models.Todo.delete().where(models.Todo.id == id)
         query.execute()

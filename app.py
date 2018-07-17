@@ -2,17 +2,20 @@ import models
 import forms
 
 from flask import (Flask, render_template, flash, redirect, url_for,
-                   g)
+                   g, jsonify)
 from resources.todos import todos_api
-from flask_bcrypt import check_password_hash
+from resources.user import users_api
 from flask_login import (LoginManager, login_user,
                          logout_user, login_required, current_user)
+from auth import auth
 
 import config
 
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
+
 app.register_blueprint(todos_api)
+app.register_blueprint(users_api)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -61,7 +64,7 @@ def login():
             print('except')
         else:
             print('else')
-            if check_password_hash(user.password, form.password.data):
+            if user.verify_password(form.password.data):
                 login_user(user)
                 flash("You've been logged in!", "Success")
                 return redirect(url_for('my_todos'))
@@ -91,6 +94,13 @@ def logout():
     logout_user()
     flash("You've been logged out!")
     return redirect(url_for('login'))
+
+
+@app.route('/api/v1/users/token', methods=['GET'])
+@auth.login_required
+def get_auth_token():
+    token = g.user.generate_auth_token()
+    return jsonify({'token': token.decode('ascii')})
 
 
 if __name__ == '__main__':
