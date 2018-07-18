@@ -1,4 +1,4 @@
-from flask import g, Blueprint, abort
+from flask import g, Blueprint
 from flask_restful import (Resource, Api, reqparse, inputs,
                            fields, marshal, marshal_with, url_for)
 
